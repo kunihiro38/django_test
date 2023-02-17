@@ -1,0 +1,68 @@
+version: '3'
+services:
+  nginx:
+    container_name: kuni_myapp_nginx
+    # buildに書かれているパスのDockerfileを参考にしてイメージを構築する
+    build:
+      context: .
+      dockerfile: ./docker_nginx/Dockerfile
+    ports:
+      # localでは、http://localhost:80, http://127.0.0.1:80 でリクエスト確認
+      - 80:80
+    volumes:
+      - ./myapp/static:/static
+    depends_on:
+      - web
+
+  web:
+    container_name: kuni_myapp_web
+    # buildに書かれているパスのDockerfileを参考にしてイメージを構築する
+    # 以下のように明示的に Dockerfile を指定する場合、requirements.txt は参照せずにfailする
+    # build:
+    #   context: .
+    #   dockerfile: ./myapp/Dockerfile
+    # build: ./myapp とディレクトリだけの指定で Dockerfile と requirements.txt
+    # の両方を参照することになる
+    build: ./myapp
+    command: gunicorn config.wsgi --bind=0.0.0.0:8000
+
+    # 永続化。書かないと落ちる
+    tty: true
+    volumes:
+      - ./myapp:/usr/src/app
+
+    # ports は指定したポートを外部に公開し、誰でもアクセスできる状態にする
+    # ports:
+    #   - "8000:8000"
+    # ホストのみポートを公開する
+    # expose で 8000 のportの穴を開けるコマンド...だと思っていたけど違うみたい
+    # コメントアウトでも穴が開いているような状態（サーバー間でリンクしている）なので
+    # とりあえずコメントアウトで残しておく
+    # expose:
+    #   - 8000
+
+    depends_on:
+      - db
+      - memcached
+
+  db:
+    container_name: kuni_myapp_db
+    platform: linux/amd64 # for M1Mac
+    image: mysql:5.7
+    volumes:
+      - ./.localdata/mysql_data:/var/lib/mysql
+
+    ports:
+      - "3333:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: myapp_db
+      MYSQL_USER: myapp
+      MYSQL_PASSWORD: changeme
+    # mysqlの設定ファイル
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  memcached:
+    container_name: kuni_myapp_memcached
+    image: memcached
+

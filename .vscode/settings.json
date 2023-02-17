@@ -1,0 +1,12 @@
+{
+    "editor.minimap.enabled": false,
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintArgs": [
+        "--load-plugins=pylint_django"
+    ],
+    "python.testing.pytestArgs": [
+        "myapp"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+}
